@@ -1,14 +1,21 @@
 package main
 
-import "net/http"
+import (
+	"home/leonid/Git/Pract/network/pkg/database"
+	"home/leonid/Git/Pract/network/pkg/service"
+	"home/leonid/Git/Pract/network/pkg/transport"
+	"log"
+)
 
 func main() {
+	db := database.NewDB()
+	svc := service.NewService(db)
 
-	network := http.NewServeMux()
+	c := transport.NewTransport("8080", svc)
+	c.InitEndpoints()
 
-	network.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte("Пирювет Мама!"))
-	})
-
-	http.ListenAndServe("localhost:8080", network)
+	err := c.Start()
+	if err != nil {
+		log.Println(err)
+	}
 }
