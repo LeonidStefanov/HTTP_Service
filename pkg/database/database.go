@@ -95,12 +95,28 @@ func (d *database) MakeFfriends(userID1, userID2 int) error {
 }
 
 func (d *database) DeleteUser(userID int) error {
-	_, ok := d.users[userID]
+	u, ok := d.users[userID]
 	if !ok {
 		return errors.New("no such user")
+	}
+	for _, v := range d.users {
+
+		for i, j := range v.Friends {
+
+			if j == u.Name {
+
+				v.Friends = RemoveIndex(u.Friends, i)
+
+			}
+
+		}
+
 	}
 
 	delete(d.users, userID)
 
 	return nil
+}
+func RemoveIndex(s []string, index int) []string {
+	return append(s[:index], s[index+1:]...)
 }
