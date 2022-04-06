@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"home/leonid/Git/Pract/network/pkg/models"
 	"home/leonid/Git/Pract/network/pkg/service"
+	"strings"
+
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -43,9 +45,9 @@ func (t *transport) Start() error {
 func (t *transport) InitEndpoints() {
 	t.echo.PUT("/change/:id", t.changeAge)
 	t.echo.POST("/create/user", t.creatUser)
-	t.echo.POST("/make/friends", t.makeFfriends)
+	t.echo.POST("/make/friends", t.makeFriends)
 	t.echo.DELETE("/delete/user", t.deleteUser)
-	t.echo.GET("/friends/:id", t.getFiends)
+	t.echo.GET("/friends/:id", t.getFriends)
 	t.echo.GET("/users", t.getUsers)
 
 }
@@ -70,13 +72,13 @@ func (t *transport) creatUser(c echo.Context) error {
 	}
 	err = t.svc.CreateUser(u)
 	if err != nil {
-		return err
+		return c.JSON(http.StatusInternalServerError, CreateError(err, http.StatusText(http.StatusBadRequest)))
 	}
 
 	return c.JSON(http.StatusCreated, CreateResponse(fmt.Sprintf("Пользователь  %v добавлен, Id: %v  ", u.Name, u.ID), http.StatusText(http.StatusCreated)))
 }
 
-func (t *transport) makeFfriends(c echo.Context) error {
+func (t *transport) makeFriends(c echo.Context) error {
 	body := c.Request().Body
 	defer body.Close()
 
@@ -94,9 +96,13 @@ func (t *transport) makeFfriends(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, CreateError(err, http.StatusText(http.StatusBadRequest)))
 	}
 
-	err = t.svc.MakeFfriends(m.SourceID, m.TargetID)
+	err = t.svc.MakeFriends(m.SourceID, m.TargetID)
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "user not found") {
+			return c.JSON(http.StatusBadRequest, CreateError(err, http.StatusText(http.StatusBadRequest)))
+		}
+
+		return c.JSON(http.StatusInternalServerError, CreateError(err, http.StatusText(http.StatusInternalServerError)))
 	}
 
 	return c.JSON(http.StatusOK, CreateResponse(fmt.Sprintf("Пользователь %v и пользователь %v теперь друзья", m.SourceID, m.TargetID), http.StatusText(http.StatusOK)))
@@ -121,23 +127,30 @@ func (t *transport) deleteUser(c echo.Context) error {
 	}
 	err = t.svc.DeleteUser(del.TargetID)
 	if err != nil {
-		return err
+		return c.JSON(http.StatusInternalServerError, CreateError(err, http.StatusText(http.StatusBadRequest)))
 	}
 	return c.JSON(http.StatusOK, CreateResponse(fmt.Sprintf("Пользователь c ID: %v удален", del.TargetID), http.StatusText(http.StatusOK)))
 
 }
 
-func (t *transport) getFiends(c echo.Context) error {
+func (t *transport) getFriends(c echo.Context) error {
 	id := c.Param("id")
 	ID, err := strconv.Atoi(id)
 	if err != nil {
-		return err
+		return c.JSON(http.StatusBadRequest, CreateError(err, http.StatusText(http.StatusBadRequest)))
 	}
 
-	data, err := t.svc.GetFiends(ID)
+	data, err := t.svc.GetFriends(ID)
+
+	fmt.Println(data)
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "user not found") {
+			return c.JSON(http.StatusBadRequest, CreateError(err, http.StatusText(http.StatusBadRequest)))
+		}
+
+		return c.JSON(http.StatusInternalServerError, CreateError(err, http.StatusText(http.StatusInternalServerError)))
 	}
+
 	return c.JSON(http.StatusOK, CreateResponse(fmt.Sprintf("Друзья пользователя с ID %v: %v", id, data), http.StatusText(http.StatusOK)))
 }
 
@@ -178,5 +191,5 @@ func (t *transport) changeAge(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, CreateResponse(fmt.Sprintln("Возраст пользователя успешно обновлён"), http.StatusText(http.StatusOK)))
+	return c.JSON(http.StatusOK, CreateResponse(fmt.Sprintf("Возраст пользователя успешно обновлён на %v", ch.NewAge), http.StatusText(http.StatusOK)))
 }

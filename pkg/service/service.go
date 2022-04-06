@@ -6,20 +6,20 @@ import (
 )
 
 type Database interface {
-	MakeFfriends(userID1, userID2 int) error
-	ChangeAge(userID int, age int) error
+	MakeFriends(userID1, userID2 int) error
+	ChangeAge(userID int, newAge int) error
 	CreateUser(user *models.User) error
-	GetUsers() ([]*models.User, error)
-	GetFiends(id int) ([]string, error)
+	GetUsers() (models.Users, error)
+	GetFriends(userID int) ([]string, error)
 	DeleteUser(userID int) error
 }
 
 type Service interface {
-	MakeFfriends(userID1, userID2 int) error
-	ChangeAge(userID int, age int) error
+	MakeFriends(userID1, userID2 int) error
+	ChangeAge(userID int, newAge int) error
 	CreateUser(user *models.User) error
-	GetUsers() ([]*models.User, error)
-	GetFiends(id int) ([]string, error)
+	GetUsers() (models.Users, error)
+	GetFriends(userID int) ([]string, error)
 	DeleteUser(userID int) error
 }
 
@@ -33,7 +33,7 @@ func NewService(db Database) *service {
 	}
 }
 
-func (s *service) GetUsers() ([]*models.User, error) {
+func (s *service) GetUsers() (models.Users, error) {
 	data, err := s.db.GetUsers()
 	if err != nil {
 		log.Println(err)
@@ -53,8 +53,8 @@ func (s *service) CreateUser(user *models.User) error {
 
 }
 
-func (s *service) GetFiends(id int) ([]string, error) {
-	data, err := s.db.GetFiends(id)
+func (s *service) GetFriends(userID int) ([]string, error) {
+	data, err := s.db.GetFriends(userID)
 
 	if err != nil {
 		log.Println(err)
@@ -65,8 +65,8 @@ func (s *service) GetFiends(id int) ([]string, error) {
 
 }
 
-func (s *service) ChangeAge(userID int, age int) error {
-	err := s.db.ChangeAge(userID, age)
+func (s *service) ChangeAge(userID int, newAge int) error {
+	err := s.db.ChangeAge(userID, newAge)
 	if err != nil {
 		return err
 	}
@@ -74,8 +74,8 @@ func (s *service) ChangeAge(userID int, age int) error {
 	return nil
 }
 
-func (s *service) MakeFfriends(userID1, userID2 int) error {
-	err := s.db.MakeFfriends(userID1, userID2)
+func (s *service) MakeFriends(userID1, userID2 int) error {
+	err := s.db.MakeFriends(userID1, userID2)
 	if err != nil {
 		return err
 	}

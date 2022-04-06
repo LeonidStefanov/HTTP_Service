@@ -1,122 +1,160 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"home/leonid/Git/Pract/network/pkg/models"
-	"sync"
+	"log"
+	"time"
+
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type database struct {
-	sync.RWMutex
-	users map[int]*models.User
+	db *mgo.Database
+	s  *mgo.Session
 }
 
-func NewDB() *database {
+func NewDB(host string, port string, dbName string) (*database, error) {
+
+	conn := fmt.Sprintf("mongodb://%v:%v/skillbox", host, port)
+	fmt.Println(conn)
+
+	session, err := mgo.DialWithTimeout(conn, time.Second*5)
+	if err != nil {
+		log.Println("DialWithTimeout: ", err)
+		return nil, err
+
+	}
+	db := session.DB(dbName)
+	session.Ping()
+
+	fmt.Println("Connected to MongoDB!")
+
 	return &database{
-		users: make(map[int]*models.User),
-	}
+		db: db,
+		s:  session,
+	}, nil
 }
 
-func (d *database) GetUsers() ([]*models.User, error) {
-	d.RLock()
-	defer d.RUnlock()
+func (base *database) Close() {
+	base.db.Session.Close()
+}
 
-	users := []*models.User{}
+func (base *database) GetUsers() (models.Users, error) {
 
-	for _, v := range d.users {
-		users = append(users, v)
-	}
-	for _, v := range users {
-		fmt.Println(v)
+	var users models.Users
+
+	err := base.db.C("skillbox").Find(bson.M{}).All(&users)
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	return users, nil
 }
 
-func (d *database) CreateUser(user *models.User) error {
-	d.Lock()
-	defer d.Unlock()
-	d.users[user.ID] = user
+func (base *database) CreateUser(user *models.User) error {
+
+	err := base.db.C("skillbox").Insert(user)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	return nil
 }
 
-func (d *database) GetFiends(userID int) ([]string, error) {
-	d.RLock()
-	defer d.RUnlock()
-	data := []string{}
-	u, ok := d.users[userID]
-	if !ok {
-		return nil, errors.New("no such user")
+func (base *database) GetFriends(userID int) ([]string, error) {
+	var user models.User
+	err := base.db.C("skillbox").Find(bson.M{"id": userID}).One(&user)
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
-	data = append(data, u.Friends...)
 
-	return data, nil
+	return user.Friends, nil
 }
 
-func (d *database) ChangeAge(userID int, age int) error {
-	d.Lock()
-	defer d.Unlock()
+func (base *database) ChangeAge(userID int, newAge int) error {
 
-	fmt.Println(d.users, userID)
-
-	u, ok := d.users[userID]
-	if !ok {
-		return errors.New("no such user")
+	err := base.db.C("skillbox").Update(bson.M{"id": userID}, bson.M{"$set": bson.M{"age": newAge}})
+	if err != nil {
+		log.Println(err)
+		return err
 	}
-	u.Age = age
-	d.users[userID] = u
 
 	return nil
 
 }
 
-func (d *database) MakeFfriends(userID1, userID2 int) error {
-	fmt.Println(d.users)
-	fmt.Println(userID1, userID2)
-	u, ok := d.users[userID1]
-	if !ok {
-		return errors.New("no such user")
+func (base *database) MakeFriends(userID1, userID2 int) error {
+	var user1 models.User
+	var user2 models.User
+
+	err := base.db.C("skillbox").Find(bson.M{"id": userID1}).One(&user1)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
-	u2, ok := d.users[userID2]
-	if !ok {
-		return errors.New("no such user")
+	err = base.db.C("skillbox").Find(bson.M{"id": userID2}).One(&user2)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
 
-	u.Friends = append(u.Friends, u2.Name)
-	u2.Friends = append(u2.Friends, u.Name)
+	user1.Friends = append(user1.Friends, user2.Name)
+	user2.Friends = append(user2.Friends, user1.Name)
 
-	d.users[userID2] = u
-	d.users[userID2] = u2
+	err = base.db.C("skillbox").Update(bson.M{"id": userID1}, user1)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	err = base.db.C("skillbox").Update(bson.M{"id": userID2}, user2)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	return nil
 
-}
-
-func (d *database) DeleteUser(userID int) error {
-	u, ok := d.users[userID]
-	if !ok {
-		return errors.New("no such user")
-	}
-	for _, v := range d.users {
-
-		for i, j := range v.Friends {
-
-			if j == u.Name {
-
-				v.Friends = RemoveIndex(u.Friends, i)
-
-			}
-
-		}
-
-	}
-
-	delete(d.users, userID)
-
-	return nil
 }
 func RemoveIndex(s []string, index int) []string {
 	return append(s[:index], s[index+1:]...)
+}
+
+func (base *database) DeleteUser(userID int) error {
+
+	allUsers, err := base.GetUsers()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	var deleteUsers models.User
+
+	for i := 0; i < len(allUsers); i++ {
+		if allUsers[i].ID == userID {
+			deleteUsers = allUsers[i]
+		}
+	}
+
+	for i := 0; i < len(allUsers); i++ {
+		for j := 0; j < len(allUsers[i].Friends); j++ {
+			if allUsers[i].Friends[j] == deleteUsers.Name {
+				allUsers[i].Friends = RemoveIndex(allUsers[i].Friends, j)
+				base.db.C("skillbox").Update(bson.M{}, allUsers[i])
+			}
+		}
+	}
+
+	err = base.db.C("skillbox").Remove(bson.M{"id": userID})
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }
