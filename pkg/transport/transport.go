@@ -1,17 +1,23 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"home/leonid/Git/Pract/network/pkg/models"
-	"home/leonid/Git/Pract/network/pkg/service"
+
+	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"time"
 
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
+	"github.com/LeonidStefanov/HTTP_Service/pkg/models"
+	"github.com/LeonidStefanov/HTTP_Service/pkg/service"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -40,6 +46,18 @@ func (t *transport) Start() error {
 
 	return t.echo.Start(":" + t.port)
 
+}
+
+func (t *transport) Stop() error {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := t.echo.Shutdown(ctx); err != nil {
+		log.Println(err)
+	}
+	return nil
 }
 
 func (t *transport) InitEndpoints() {
@@ -127,7 +145,7 @@ func (t *transport) deleteUser(c echo.Context) error {
 	}
 	err = t.svc.DeleteUser(del.TargetID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, CreateError(err, http.StatusText(http.StatusBadRequest)))
+		return c.JSON(http.StatusInternalServerError, CreateError(err, http.StatusText(http.StatusInternalServerError)))
 	}
 	return c.JSON(http.StatusOK, CreateResponse(fmt.Sprintf("Пользователь c ID: %v удален", del.TargetID), http.StatusText(http.StatusOK)))
 

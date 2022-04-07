@@ -1,6 +1,6 @@
 package transport
 
-import "home/leonid/Git/Pract/network/pkg/models"
+import "github.com/LeonidStefanov/HTTP_Service/pkg/models"
 
 func CreateError(err error, status string) *models.ErrorRecponse {
 	return &models.ErrorRecponse{

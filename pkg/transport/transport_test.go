@@ -2,17 +2,14 @@ package transport
 
 import (
 	"bytes"
-	"fmt"
-	"home/leonid/Git/Pract/network/pkg/database"
-	"home/leonid/Git/Pract/network/pkg/option"
-	"home/leonid/Git/Pract/network/pkg/service"
+
 	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/kelseyhightower/envconfig"
+	"github.com/LeonidStefanov/HTTP_Service/pkg/dbmock"
+	"github.com/LeonidStefanov/HTTP_Service/pkg/service"
 )
 
 var (
@@ -22,30 +19,18 @@ var (
 
 	newAgeJSON = `{"new_age":45}`
 
-	makeFriendsJSON = `{"source_id" :6,"target_id":40}`
+	makeFriendsJSON = `{"source_id" :66,"target_id":40}`
 
-	userJSON = `{"id":40,"name":"Min","age":27,"friends":["Jon"]}`
+	userJSON = `{"id":36,"name":"Min","age":27,"friends":["Jon"]}`
 )
 
 func TestCreateUser(t *testing.T) {
-	var cfg option.Options
-	err := envconfig.Process("service", &cfg)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 
-	fmt.Println(cfg)
-
-	db, err := database.NewDB(cfg.DBHost, cfg.DBPort, "skillbox")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer db.Close()
+	db := dbmock.NewMock()
 	svc := service.NewService(db)
 
 	h := NewTransport(port, svc)
+
 	h.InitEndpoints()
 	go h.Start()
 
@@ -71,29 +56,15 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetFriends(t *testing.T) {
-	var cfg option.Options
-	err := envconfig.Process("service", &cfg)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	fmt.Println(cfg)
-
-	db, err := database.NewDB(cfg.DBHost, cfg.DBPort, "skillbox")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer db.Close()
-
+	db := dbmock.NewMock()
 	svc := service.NewService(db)
 
 	h := NewTransport(port, svc)
+
 	h.InitEndpoints()
 	go h.Start()
 
-	req, _ := http.NewRequest("GET", "http://localhost:8080/friends/5", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8080/friends/40", nil)
 	client := &http.Client{
 		Timeout: time.Second * 30,
 	}
@@ -115,25 +86,12 @@ func TestGetFriends(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
-	var cfg option.Options
-	err := envconfig.Process("service", &cfg)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	fmt.Println(cfg)
-
-	db, err := database.NewDB(cfg.DBHost, cfg.DBPort, "skillbox")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer db.Close()
+	db := dbmock.NewMock()
 
 	svc := service.NewService(db)
 
 	h := NewTransport(port, svc)
+
 	h.InitEndpoints()
 	go h.Start()
 
@@ -158,25 +116,12 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestMakeFriends(t *testing.T) {
-	var cfg option.Options
-	err := envconfig.Process("service", &cfg)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	fmt.Println(cfg)
-
-	db, err := database.NewDB(cfg.DBHost, cfg.DBPort, "skillbox")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer db.Close()
+	db := dbmock.NewMock()
 
 	svc := service.NewService(db)
 
 	h := NewTransport(port, svc)
+
 	h.InitEndpoints()
 	go h.Start()
 
@@ -202,29 +147,17 @@ func TestMakeFriends(t *testing.T) {
 }
 
 func TestChangeAge(t *testing.T) {
-	var cfg option.Options
-	err := envconfig.Process("service", &cfg)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 
-	fmt.Println(cfg)
-
-	db, err := database.NewDB(cfg.DBHost, cfg.DBPort, "skillbox")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer db.Close()
+	db := dbmock.NewMock()
 
 	svc := service.NewService(db)
 
 	h := NewTransport(port, svc)
+
 	h.InitEndpoints()
 	go h.Start()
 
-	req, _ := http.NewRequest("PUT", "http://localhost:8080/change/5", bytes.NewReader([]byte(newAgeJSON)))
+	req, _ := http.NewRequest("PUT", "http://localhost:8080/change/40", bytes.NewReader([]byte(newAgeJSON)))
 	client := &http.Client{
 		Timeout: time.Second * 30,
 	}
@@ -245,25 +178,12 @@ func TestChangeAge(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	var cfg option.Options
-	err := envconfig.Process("service", &cfg)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	fmt.Println(cfg)
-
-	db, err := database.NewDB(cfg.DBHost, cfg.DBPort, "skillbox")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer db.Close()
+	db := dbmock.NewMock()
 
 	svc := service.NewService(db)
 
 	h := NewTransport(port, svc)
+
 	h.InitEndpoints()
 	go h.Start()
 

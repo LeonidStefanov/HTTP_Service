@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
+	"github.com/LeonidStefanov/HTTP_Service/pkg/database"
+	"github.com/LeonidStefanov/HTTP_Service/pkg/option"
+	"github.com/LeonidStefanov/HTTP_Service/pkg/service"
+	"github.com/LeonidStefanov/HTTP_Service/pkg/transport"
 	"github.com/kelseyhightower/envconfig"
 
-	"home/leonid/Git/Pract/network/pkg/database"
-	"home/leonid/Git/Pract/network/pkg/option"
-	"home/leonid/Git/Pract/network/pkg/service"
-	"home/leonid/Git/Pract/network/pkg/transport"
 	"log"
 )
 

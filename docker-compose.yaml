@@ -34,8 +34,6 @@ services:
   web:
      build: ./nginx/
      restart: always
-    #  volumes:
-    #   - "./nginx.conf:/etc/nginx/nginx.conf"
      ports:
      - "8080:80"
     

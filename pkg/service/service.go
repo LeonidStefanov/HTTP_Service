@@ -1,8 +1,9 @@
 package service
 
 import (
-	"home/leonid/Git/Pract/network/pkg/models"
 	"log"
+
+	"github.com/LeonidStefanov/HTTP_Service/pkg/models"
 )
 
 type Database interface {

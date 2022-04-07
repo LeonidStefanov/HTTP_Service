@@ -2,10 +2,11 @@ package database
 
 import (
 	"fmt"
-	"home/leonid/Git/Pract/network/pkg/models"
+
 	"log"
 	"time"
 
+	"github.com/LeonidStefanov/HTTP_Service/pkg/models"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
